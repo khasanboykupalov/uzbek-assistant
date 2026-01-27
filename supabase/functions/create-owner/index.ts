@@ -10,7 +10,6 @@ interface CreateOwnerRequest {
   email: string;
   password: string;
   full_name: string;
-  secret_key: string;
 }
 
 serve(async (req) => {
@@ -19,15 +18,13 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, full_name, secret_key }: CreateOwnerRequest = await req.json();
+    const { email, password, full_name }: CreateOwnerRequest = await req.json();
 
-    // Verify secret key (should be set as environment variable)
-    const OWNER_SECRET_KEY = Deno.env.get("OWNER_SECRET_KEY");
-    
-    if (!OWNER_SECRET_KEY || secret_key !== OWNER_SECRET_KEY) {
+    // Validate inputs
+    if (!email || !password || !full_name) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: Invalid secret key" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Email, password, and full_name are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -46,10 +43,11 @@ serve(async (req) => {
       throw checkError;
     }
 
+    // If owner already exists, reject the request
     if (existingRoles && existingRoles.length > 0) {
       return new Response(
-        JSON.stringify({ error: "Owner already exists" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Owner already exists. Contact system administrator." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -85,8 +83,12 @@ serve(async (req) => {
       .insert({ user_id: authData.user.id, role: "owner" });
 
     if (roleError) {
+      // Rollback: delete the created user
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       throw roleError;
     }
+
+    console.log("Owner created successfully:", authData.user.id);
 
     return new Response(
       JSON.stringify({ 
@@ -97,10 +99,11 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating owner:", error);
+    const errorMessage = error instanceof Error ? error.message : "An error occurred";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
