@@ -10,6 +10,11 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { IncomeChart } from '@/components/dashboard/IncomeChart';
+import { PaymentStatusChart } from '@/components/dashboard/PaymentStatusChart';
+import { TenantsByProductChart } from '@/components/dashboard/TenantsByProductChart';
+import { AdminPerformanceChart } from '@/components/dashboard/AdminPerformanceChart';
+import { MonthlyTrendChart } from '@/components/dashboard/MonthlyTrendChart';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +43,67 @@ const Dashboard = () => {
     unpaidTenants: 6,
     productTypes: ['Oziq-ovqat', 'Elektronika', 'Kiyim-kechak', 'Qurilish mollari'],
   };
+
+  // Chart data
+  const monthlyIncomeData = [
+    { month: 'Yan', income: 95000000 },
+    { month: 'Fev', income: 102000000 },
+    { month: 'Mar', income: 98000000 },
+    { month: 'Apr', income: 115000000 },
+    { month: 'May', income: 108000000 },
+    { month: 'Iyn', income: 125000000 },
+  ];
+
+  const adminMonthlyIncomeData = [
+    { month: 'Yan', income: 12500000 },
+    { month: 'Fev', income: 13200000 },
+    { month: 'Mar', income: 11800000 },
+    { month: 'Apr', income: 14500000 },
+    { month: 'May', income: 15100000 },
+    { month: 'Iyn', income: 15600000 },
+  ];
+
+  const productTypeData = [
+    { name: 'Oziq-ovqat', value: 45 },
+    { name: 'Elektronika', value: 32 },
+    { name: 'Kiyim-kechak', value: 28 },
+    { name: 'Qurilish mollari', value: 25 },
+    { name: 'Uy-ro\'zg\'or', value: 18 },
+    { name: 'Boshqa', value: 8 },
+  ];
+
+  const adminProductTypeData = [
+    { name: 'Oziq-ovqat', value: 8 },
+    { name: 'Elektronika', value: 6 },
+    { name: 'Kiyim-kechak', value: 5 },
+    { name: 'Qurilish mollari', value: 5 },
+  ];
+
+  const adminPerformanceData = [
+    { name: 'Admin 1', income: 18500000, tenants: 24 },
+    { name: 'Admin 2', income: 16200000, tenants: 21 },
+    { name: 'Admin 3', income: 15800000, tenants: 19 },
+    { name: 'Admin 4', income: 14500000, tenants: 18 },
+    { name: 'Admin 5', income: 12000000, tenants: 15 },
+  ];
+
+  const monthlyTrendData = [
+    { month: 'Yan', expected: 95000000, paid: 82000000 },
+    { month: 'Fev', expected: 102000000, paid: 95000000 },
+    { month: 'Mar', expected: 98000000, paid: 90000000 },
+    { month: 'Apr', expected: 115000000, paid: 108000000 },
+    { month: 'May', expected: 108000000, paid: 102000000 },
+    { month: 'Iyn', expected: 125000000, paid: 118000000 },
+  ];
+
+  const adminTrendData = [
+    { month: 'Yan', expected: 14000000, paid: 12500000 },
+    { month: 'Fev', expected: 14500000, paid: 13200000 },
+    { month: 'Mar', expected: 14000000, paid: 11800000 },
+    { month: 'Apr', expected: 15500000, paid: 14500000 },
+    { month: 'May', expected: 16000000, paid: 15100000 },
+    { month: 'Iyn', expected: 18000000, paid: 15600000 },
+  ];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
@@ -125,6 +191,40 @@ const Dashboard = () => {
               variant="destructive"
             />
           </div>
+        )}
+
+        {/* Charts Section */}
+        {role === 'owner' ? (
+          <>
+            {/* Owner Charts - Row 1 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <IncomeChart data={monthlyIncomeData} />
+              <PaymentStatusChart paid={142} unpaid={14} />
+            </div>
+
+            {/* Owner Charts - Row 2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AdminPerformanceChart data={adminPerformanceData} />
+              <TenantsByProductChart data={productTypeData} />
+            </div>
+
+            {/* Owner Charts - Row 3 */}
+            <MonthlyTrendChart data={monthlyTrendData} />
+          </>
+        ) : (
+          <>
+            {/* Admin Charts - Row 1 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <IncomeChart data={adminMonthlyIncomeData} />
+              <PaymentStatusChart paid={adminStats.paidTenants} unpaid={adminStats.unpaidTenants} />
+            </div>
+
+            {/* Admin Charts - Row 2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TenantsByProductChart data={adminProductTypeData} />
+              <MonthlyTrendChart data={adminTrendData} />
+            </div>
+          </>
         )}
 
         {/* Additional Info Cards */}

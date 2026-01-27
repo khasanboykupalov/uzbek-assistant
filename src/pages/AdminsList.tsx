@@ -147,42 +147,35 @@ const AdminsList = () => {
     setIsSubmitting(true);
 
     try {
-      // Create user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: formData.full_name,
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Avtorizatsiya talab qilinadi');
+      }
+
+      // Call edge function to create admin
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
           },
-        },
-      });
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            full_name: formData.full_name,
+            phone: formData.phone,
+          }),
+        }
+      );
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Foydalanuvchi yaratilmadi');
+      const data = await response.json();
 
-      // Update profile with phone
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ phone: formData.phone, full_name: formData.full_name })
-        .eq('user_id', authData.user.id);
-
-      if (profileError) throw profileError;
-
-      // Add admin role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: authData.user.id, role: 'admin' });
-
-      if (roleError) throw roleError;
-
-      // Create admin status entry
-      const { error: statusError } = await supabase
-        .from('admin_status')
-        .insert({ admin_id: authData.user.id, is_blocked: false });
-
-      if (statusError) throw statusError;
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Admin yaratishda xatolik');
+      }
 
       toast({
         title: t('success'),
