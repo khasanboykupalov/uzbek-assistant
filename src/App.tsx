@@ -11,6 +11,9 @@ import Auth from "./pages/Auth";
 import Setup from "./pages/Setup";
 import Dashboard from "./pages/Dashboard";
 import AdminsList from "./pages/AdminsList";
+import Warehouses from "./pages/Warehouses";
+import Tenants from "./pages/Tenants";
+import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +50,7 @@ const App = () => (
                 path="/dashboard/warehouses"
                 element={
                   <ProtectedRoute allowedRoles={['owner', 'admin']}>
-                    <Dashboard />
+                    <Warehouses />
                   </ProtectedRoute>
                 }
               />
@@ -55,7 +58,7 @@ const App = () => (
                 path="/dashboard/tenants"
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
-                    <Dashboard />
+                    <Tenants />
                   </ProtectedRoute>
                 }
               />
@@ -63,7 +66,7 @@ const App = () => (
                 path="/dashboard/payments"
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
-                    <Dashboard />
+                    <Payments />
                   </ProtectedRoute>
                 }
               />
