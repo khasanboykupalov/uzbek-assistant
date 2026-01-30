@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MoreVertical, Shield, ShieldOff, UserCog, Loader2 } from 'lucide-react';
+import { Plus, Search, MoreVertical, Shield, ShieldOff, UserCog, Loader2, Pencil } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,11 @@ const adminSchema = z.object({
   password: z.string().min(6, 'Parol kamida 6 ta belgi bo\'lishi kerak').max(100),
 });
 
+const editAdminSchema = z.object({
+  full_name: z.string().min(2, 'Ism kamida 2 ta harf bo\'lishi kerak').max(100),
+  phone: z.string().min(9, 'Telefon raqami kamida 9 ta raqam bo\'lishi kerak').max(20),
+});
+
 interface Admin {
   id: string;
   user_id: string;
@@ -57,6 +62,8 @@ const AdminsList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -64,7 +71,12 @@ const AdminsList = () => {
     phone: '',
     password: '',
   });
+  const [editFormData, setEditFormData] = useState({
+    full_name: '',
+    phone: '',
+  });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
 
   const fetchAdmins = async () => {
     try {
@@ -235,6 +247,67 @@ const AdminsList = () => {
     }
   };
 
+  const handleOpenEditDialog = (admin: Admin) => {
+    setEditingAdmin(admin);
+    setEditFormData({
+      full_name: admin.full_name,
+      phone: admin.phone,
+    });
+    setEditFormErrors({});
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditAdmin = async () => {
+    if (!editingAdmin) return;
+    
+    setEditFormErrors({});
+    
+    const result = editAdminSchema.safeParse(editFormData);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setEditFormErrors(errors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editFormData.full_name.trim(),
+          phone: editFormData.phone.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', editingAdmin.user_id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('success'),
+        description: t('updated_successfully'),
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingAdmin(null);
+      fetchAdmins();
+    } catch (error: any) {
+      console.error('Error updating admin:', error);
+      toast({
+        title: t('error'),
+        description: error.message || 'Adminni yangilashda xatolik',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filteredAdmins = admins.filter(admin =>
     admin.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -314,6 +387,10 @@ const AdminsList = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenEditDialog(admin)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              {t('edit')}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleToggleBlock(admin)}>
                               {admin.is_blocked ? (
                                 <>
@@ -412,6 +489,69 @@ const AdminsList = () => {
                 </>
               ) : (
                 t('add')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Admin Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('edit_admin')}</DialogTitle>
+            <DialogDescription>
+              Admin ma'lumotlarini yangilang
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t('admin_name')}</Label>
+              <Input
+                value={editFormData.full_name}
+                onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                placeholder="Ism Familiya"
+                className={editFormErrors.full_name ? 'border-destructive' : ''}
+              />
+              {editFormErrors.full_name && (
+                <p className="text-sm text-destructive">{editFormErrors.full_name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>{t('admin_email')}</Label>
+              <Input
+                type="email"
+                value={editingAdmin?.email || ''}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">Email o'zgartirib bo'lmaydi</p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('admin_phone')}</Label>
+              <Input
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="+998 90 123 45 67"
+                className={editFormErrors.phone ? 'border-destructive' : ''}
+              />
+              {editFormErrors.phone && (
+                <p className="text-sm text-destructive">{editFormErrors.phone}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={handleEditAdmin} disabled={isSubmitting} className="gradient-primary">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('loading')}
+                </>
+              ) : (
+                t('save')
               )}
             </Button>
           </DialogFooter>
