@@ -199,27 +199,37 @@ const AdminsList = () => {
 
   const handleToggleBlock = async (admin: Admin) => {
     try {
+      const newBlockedStatus = !admin.is_blocked;
+      
       const { error } = await supabase
         .from('admin_status')
-        .upsert({
-          admin_id: admin.user_id,
-          is_blocked: !admin.is_blocked,
-          blocked_at: !admin.is_blocked ? new Date().toISOString() : null,
-        });
+        .upsert(
+          {
+            admin_id: admin.user_id,
+            is_blocked: newBlockedStatus,
+            blocked_at: newBlockedStatus ? new Date().toISOString() : null,
+            blocked_reason: newBlockedStatus ? 'Owner tomonidan bloklandi' : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'admin_id' }
+        );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Block toggle error:', error);
+        throw error;
+      }
 
       toast({
         title: t('success'),
-        description: admin.is_blocked ? t('unblocked_successfully') : t('blocked_successfully'),
+        description: newBlockedStatus ? t('blocked_successfully') : t('unblocked_successfully'),
       });
 
       fetchAdmins();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling block:', error);
       toast({
         title: t('error'),
-        description: 'Xatolik yuz berdi',
+        description: error.message || 'Xatolik yuz berdi',
         variant: 'destructive',
       });
     }
