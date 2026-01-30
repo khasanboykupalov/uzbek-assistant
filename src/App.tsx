@@ -14,6 +14,7 @@ import AdminsList from "./pages/AdminsList";
 import Warehouses from "./pages/Warehouses";
 import Tenants from "./pages/Tenants";
 import Payments from "./pages/Payments";
+import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,7 +75,7 @@ const App = () => (
                 path="/dashboard/statistics"
                 element={
                   <ProtectedRoute allowedRoles={['owner', 'admin']}>
-                    <Dashboard />
+                    <Statistics />
                   </ProtectedRoute>
                 }
               />
