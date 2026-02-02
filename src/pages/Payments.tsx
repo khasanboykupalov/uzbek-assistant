@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, CreditCard, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, CreditCard, AlertCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +61,7 @@ const Payments = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState<PaymentFormData>({
     tenant_id: '',
     month: new Date().getMonth() + 1,
@@ -69,6 +70,17 @@ const Payments = () => {
     paid_amount: 0,
     notes: '',
   });
+
+  const filteredPayments = useMemo(() => {
+    if (!searchQuery.trim()) return payments;
+    const query = searchQuery.toLowerCase();
+    return payments.filter(payment =>
+      payment.tenant?.full_name?.toLowerCase().includes(query) ||
+      payment.tenant?.phone?.includes(query) ||
+      payment.tenant?.product_type?.toLowerCase().includes(query) ||
+      payment.notes?.toLowerCase().includes(query)
+    );
+  }, [payments, searchQuery]);
 
   useEffect(() => {
     fetchData();
@@ -423,20 +435,31 @@ const Payments = () => {
           </Card>
         </div>
 
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t('search') + ' (ism, telefon)...'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              {getMonthName(language, selectedMonth)} {selectedYear} - {t('payments')}
+              {getMonthName(language, selectedMonth)} {selectedYear} - {t('payments')} ({filteredPayments.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
-            ) : payments.length === 0 ? (
+            ) : filteredPayments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                Bu oy uchun to'lov qayd etilmagan
+                {searchQuery ? 'Hech narsa topilmadi' : 'Bu oy uchun to\'lov qayd etilmagan'}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -453,7 +476,7 @@ const Payments = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment) => {
+                    {filteredPayments.map((payment) => {
                       const total = Number(payment.expected_amount) + Number(payment.carry_over_debt);
                       const remaining = total - Number(payment.paid_amount);
                       const status = getPaymentStatus(payment);

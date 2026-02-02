@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, Users, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,7 @@ const Tenants = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [deletingTenant, setDeletingTenant] = useState<Tenant | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState<TenantFormData>({
     full_name: '',
     phone: '',
@@ -75,6 +76,17 @@ const Tenants = () => {
     warehouse_id: '',
     is_active: true,
   });
+
+  const filteredTenants = useMemo(() => {
+    if (!searchQuery.trim()) return tenants;
+    const query = searchQuery.toLowerCase();
+    return tenants.filter(tenant =>
+      tenant.full_name.toLowerCase().includes(query) ||
+      tenant.phone.includes(query) ||
+      tenant.product_type.toLowerCase().includes(query) ||
+      tenant.warehouse?.name?.toLowerCase().includes(query)
+    );
+  }, [tenants, searchQuery]);
 
   useEffect(() => {
     fetchData();
@@ -336,18 +348,32 @@ const Tenants = () => {
           )}
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('search') + ' (ism, telefon, mahsulot turi)...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              {t('tenants')}
+              {t('tenants')} ({filteredTenants.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
-            ) : tenants.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">{t('no_tenants')}</div>
+            ) : filteredTenants.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchQuery ? 'Hech narsa topilmadi' : t('no_tenants')}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -363,7 +389,7 @@ const Tenants = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tenants.map((tenant) => (
+                    {filteredTenants.map((tenant) => (
                       <TableRow key={tenant.id}>
                         <TableCell className="font-medium">{tenant.full_name}</TableCell>
                         <TableCell>{tenant.phone}</TableCell>

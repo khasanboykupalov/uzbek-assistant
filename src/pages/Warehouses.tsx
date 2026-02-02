@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Building2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, Building2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,12 +57,23 @@ const Warehouses = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [deletingWarehouse, setDeletingWarehouse] = useState<Warehouse | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState<WarehouseFormData>({
     name: '',
     address: '',
     description: '',
     is_active: true,
   });
+
+  const filteredWarehouses = useMemo(() => {
+    if (!searchQuery.trim()) return warehouses;
+    const query = searchQuery.toLowerCase();
+    return warehouses.filter(warehouse =>
+      warehouse.name.toLowerCase().includes(query) ||
+      warehouse.address?.toLowerCase().includes(query) ||
+      warehouse.description?.toLowerCase().includes(query)
+    );
+  }, [warehouses, searchQuery]);
 
   useEffect(() => {
     fetchWarehouses();
@@ -265,18 +276,32 @@ const Warehouses = () => {
           )}
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('search') + ' (nom, manzil)...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              {t('warehouses')}
+              {t('warehouses')} ({filteredWarehouses.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
-            ) : warehouses.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">{t('no_warehouses')}</div>
+            ) : filteredWarehouses.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchQuery ? 'Hech narsa topilmadi' : t('no_warehouses')}
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -288,7 +313,7 @@ const Warehouses = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {warehouses.map((warehouse) => (
+                  {filteredWarehouses.map((warehouse) => (
                     <TableRow key={warehouse.id}>
                       <TableCell className="font-medium">{warehouse.name}</TableCell>
                       <TableCell>{warehouse.address || '-'}</TableCell>
