@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, CreditCard, AlertCircle, Search } from 'lucide-react';
+import { Plus, CreditCard, AlertCircle, Search, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +75,10 @@ const Payments = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<PaymentWithTenant | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<PaymentWithTenant | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +87,10 @@ const Payments = () => {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     expected_amount: 0,
+    paid_amount: 0,
+    notes: '',
+  });
+  const [editFormData, setEditFormData] = useState({
     paid_amount: 0,
     notes: '',
   });
@@ -233,6 +257,77 @@ const Payments = () => {
       toast({
         title: t('error'),
         description: 'Failed to save payment',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleOpenEditDialog = (payment: PaymentWithTenant) => {
+    setEditingPayment(payment);
+    setEditFormData({
+      paid_amount: Number(payment.paid_amount),
+      notes: payment.notes || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditPayment = async () => {
+    if (!editingPayment) return;
+
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          paid_amount: editFormData.paid_amount,
+          notes: editFormData.notes || null,
+          payment_date: editFormData.paid_amount > 0 ? new Date().toISOString() : null,
+        })
+        .eq('id', editingPayment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('success'),
+        description: t('updated_successfully'),
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingPayment(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast({
+        title: t('error'),
+        description: "To'lovni yangilashda xatolik",
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', deletingPayment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: t('success'),
+        description: t('deleted_successfully'),
+      });
+
+      setIsDeleteDialogOpen(false);
+      setDeletingPayment(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast({
+        title: t('error'),
+        description: "To'lovni o'chirishda xatolik",
         variant: 'destructive',
       });
     }
@@ -473,6 +568,7 @@ const Payments = () => {
                       <TableHead>{t('paid_amount')}</TableHead>
                       <TableHead>{t('remaining')}</TableHead>
                       <TableHead>{t('status')}</TableHead>
+                      {canEdit && <TableHead className="w-[80px]">{t('actions')}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -511,6 +607,33 @@ const Payments = () => {
                               {status === 'paid' ? "To'langan" : status === 'partial' ? "Qisman" : "To'lanmagan"}
                             </span>
                           </TableCell>
+                          {canEdit && (
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(payment)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    {t('edit')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setDeletingPayment(payment);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {t('delete')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}
@@ -521,6 +644,87 @@ const Payments = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>To'lovni tahrirlash</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Ijarachi</Label>
+              <Input
+                value={editingPayment?.tenant?.full_name || '-'}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Oy / Yil</Label>
+              <Input
+                value={editingPayment ? `${getMonthName(language, editingPayment.month)} ${editingPayment.year}` : '-'}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('expected_amount')}</Label>
+              <Input
+                value={formatCurrency(Number(editingPayment?.expected_amount || 0) + Number(editingPayment?.carry_over_debt || 0))}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_paid_amount">{t('paid_amount')} (so'm) *</Label>
+              <Input
+                id="edit_paid_amount"
+                type="number"
+                value={editFormData.paid_amount}
+                onChange={(e) => setEditFormData({ ...editFormData, paid_amount: Number(e.target.value) })}
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_notes">Izoh</Label>
+              <Textarea
+                id="edit_notes"
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
+              {t('cancel')}
+            </Button>
+            <Button onClick={handleEditPayment} className="flex-1">
+              {t('save')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>To'lovni o'chirish</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingPayment?.tenant?.full_name} uchun {getMonthName(language, deletingPayment?.month || 1)} {deletingPayment?.year} 
+              to'lovini o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePayment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
