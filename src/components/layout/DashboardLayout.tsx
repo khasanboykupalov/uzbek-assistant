@@ -41,7 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard, roles: ['owner', 'admin'] },
     { href: '/dashboard/admins', label: t('admins'), icon: UserCog, roles: ['owner'] },
     { href: '/dashboard/warehouses', label: t('warehouses'), icon: Building2, roles: ['owner', 'admin'] },
-    { href: '/dashboard/tenants', label: t('tenants'), icon: Users, roles: ['admin'] },
+    { href: '/dashboard/tenants', label: t('tenants'), icon: Users, roles: ['owner', 'admin'] },
     { href: '/dashboard/payments', label: t('payments'), icon: CreditCard, roles: ['admin'] },
     { href: '/dashboard/statistics', label: t('statistics'), icon: BarChart3, roles: ['owner', 'admin'] },
   ];

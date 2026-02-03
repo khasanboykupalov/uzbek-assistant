@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -13,9 +13,16 @@ import Dashboard from "./pages/Dashboard";
 import AdminsList from "./pages/AdminsList";
 import Warehouses from "./pages/Warehouses";
 import Tenants from "./pages/Tenants";
+import OwnerTenants from "./pages/OwnerTenants";
 import Payments from "./pages/Payments";
 import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
+
+// Wrapper component to render correct tenants page based on role
+const TenantsRouteWrapper = () => {
+  const { role } = useAuth();
+  return role === 'owner' ? <OwnerTenants /> : <Tenants />;
+};
 
 const queryClient = new QueryClient();
 
@@ -58,8 +65,9 @@ const App = () => (
               <Route
                 path="/dashboard/tenants"
                 element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <Tenants />
+                  <ProtectedRoute allowedRoles={['owner', 'admin']}>
+                    {/* Component selection based on role is handled inside */}
+                    <TenantsRouteWrapper />
                   </ProtectedRoute>
                 }
               />
