@@ -31,6 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ExportButton } from '@/components/ExportButton';
+import { exportToExcel } from '@/lib/exportToExcel';
 import { z } from 'zod';
 
 const adminSchema = z.object({
@@ -314,6 +316,40 @@ const AdminsList = () => {
     admin.phone.includes(searchQuery)
   );
 
+  const handleExport = () => {
+    if (filteredAdmins.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('no_data_to_export'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const exportData = filteredAdmins.map(admin => ({
+      full_name: admin.full_name,
+      email: admin.email,
+      phone: admin.phone,
+      status: admin.is_blocked ? t('blocked') : t('active'),
+    }));
+
+    exportToExcel(
+      exportData,
+      [
+        { key: 'full_name', header: t('admin_name') },
+        { key: 'email', header: t('admin_email') },
+        { key: 'phone', header: t('admin_phone') },
+        { key: 'status', header: t('status') },
+      ],
+      { filename: 'adminlar', sheetName: 'Adminlar' }
+    );
+
+    toast({
+      title: t('success'),
+      description: t('export_success'),
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -328,10 +364,13 @@ const AdminsList = () => {
               Ombor adminlarini boshqarish
             </p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gradient-primary">
-            <Plus className="h-4 w-4 mr-2" />
-            {t('add_admin')}
-          </Button>
+          <div className="flex gap-2">
+            <ExportButton onExport={handleExport} />
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gradient-primary">
+              <Plus className="h-4 w-4 mr-2" />
+              {t('add_admin')}
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
