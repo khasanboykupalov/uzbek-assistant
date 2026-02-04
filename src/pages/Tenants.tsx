@@ -42,6 +42,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ExportButton } from '@/components/ExportButton';
+import { exportToExcel } from '@/lib/exportToExcel';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Tenant = Tables<'tenants'>;
@@ -243,24 +245,64 @@ const Tenants = () => {
 
   const canEdit = role === 'admin';
 
+  const handleExport = () => {
+    if (filteredTenants.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('no_data_to_export'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const exportData = filteredTenants.map(tenant => ({
+      full_name: tenant.full_name,
+      phone: tenant.phone,
+      product_type: tenant.product_type,
+      warehouse: tenant.warehouse?.name || '-',
+      monthly_rent: Number(tenant.monthly_rent),
+      status: tenant.is_active ? t('active') : t('inactive'),
+    }));
+
+    exportToExcel(
+      exportData,
+      [
+        { key: 'full_name', header: t('tenant_name') },
+        { key: 'phone', header: t('tenant_phone') },
+        { key: 'product_type', header: t('product_type') },
+        { key: 'warehouse', header: t('warehouse') },
+        { key: 'monthly_rent', header: t('monthly_rent') },
+        { key: 'status', header: t('status') },
+      ],
+      { filename: 'ijarachilar', sheetName: 'Ijarachilar' }
+    );
+
+    toast({
+      title: t('success'),
+      description: t('export_success'),
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold">{t('tenants')}</h1>
             <p className="text-muted-foreground mt-1">
               Ijarachilarni boshqaring
             </p>
           </div>
-          {canEdit && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('add_tenant')}
-                </Button>
-              </DialogTrigger>
+          <div className="flex gap-2">
+            <ExportButton onExport={handleExport} />
+            {canEdit && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('add_tenant')}
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
@@ -346,6 +388,7 @@ const Tenants = () => {
               </DialogContent>
             </Dialog>
           )}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">

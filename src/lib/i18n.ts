@@ -127,6 +127,9 @@ export const translations = {
     saving: "Saqlanmoqda...",
     save_changes: "O'zgarishlarni saqlash",
     profile: "Profil",
+    export_excel: "Excelga yuklash",
+    export_success: "Ma'lumotlar muvaffaqiyatli yuklandi",
+    no_data_to_export: "Eksport qilish uchun ma'lumot yo'q",
     
     // Language
     language: "Til",
@@ -277,6 +280,9 @@ export const translations = {
     saving: "Сохранение...",
     save_changes: "Сохранить изменения",
     profile: "Профиль",
+    export_excel: "Экспорт в Excel",
+    export_success: "Данные успешно экспортированы",
+    no_data_to_export: "Нет данных для экспорта",
     
     // Language
     language: "Язык",
@@ -427,6 +433,9 @@ export const translations = {
     saving: "Saving...",
     save_changes: "Save Changes",
     profile: "Profile",
+    export_excel: "Export to Excel",
+    export_success: "Data exported successfully",
+    no_data_to_export: "No data to export",
     
     // Language
     language: "Language",

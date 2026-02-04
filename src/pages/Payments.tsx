@@ -49,6 +49,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getMonthName } from '@/lib/i18n';
+import { ExportButton } from '@/components/ExportButton';
+import { exportToExcel } from '@/lib/exportToExcel';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Payment = Tables<'payments'>;
@@ -356,6 +358,48 @@ const Payments = () => {
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.paid_amount), 0);
   const totalRemaining = totalExpected - totalPaid;
 
+  const handleExport = () => {
+    if (filteredPayments.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('no_data_to_export'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const exportData = filteredPayments.map(payment => ({
+      tenant_name: payment.tenant?.full_name || '-',
+      phone: payment.tenant?.phone || '-',
+      expected_amount: Number(payment.expected_amount),
+      carry_over_debt: Number(payment.carry_over_debt),
+      total: Number(payment.expected_amount) + Number(payment.carry_over_debt),
+      paid_amount: Number(payment.paid_amount),
+      remaining: Number(payment.expected_amount) + Number(payment.carry_over_debt) - Number(payment.paid_amount),
+      notes: payment.notes || '',
+    }));
+
+    exportToExcel(
+      exportData,
+      [
+        { key: 'tenant_name', header: t('tenant_name') },
+        { key: 'phone', header: t('tenant_phone') },
+        { key: 'expected_amount', header: t('expected_amount') },
+        { key: 'carry_over_debt', header: t('carry_over') },
+        { key: 'total', header: 'Jami' },
+        { key: 'paid_amount', header: t('paid_amount') },
+        { key: 'remaining', header: t('remaining') },
+        { key: 'notes', header: 'Izoh' },
+      ],
+      { filename: `tolovlar_${getMonthName(language, selectedMonth)}_${selectedYear}`, sheetName: 'To\'lovlar' }
+    );
+
+    toast({
+      title: t('success'),
+      description: t('export_success'),
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -366,7 +410,8 @@ const Payments = () => {
               To'lovlarni boshqaring va qarzlarni kuzating
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <ExportButton onExport={handleExport} />
             <div className="flex gap-2">
               <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(Number(v))}>
                 <SelectTrigger className="w-[140px]">
