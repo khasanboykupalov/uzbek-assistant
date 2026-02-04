@@ -113,6 +113,20 @@ export const translations = {
     deleted_successfully: "Muvaffaqiyatli o'chirildi",
     blocked_successfully: "Muvaffaqiyatli bloklandi",
     unblocked_successfully: "Blokdan muvaffaqiyatli chiqarildi",
+    profile_updated: "Profil muvaffaqiyatli yangilandi",
+    
+    // Profile
+    profile_settings: "Profil sozlamalari",
+    profile_settings_description: "Shaxsiy ma'lumotlaringizni yangilang",
+    personal_info: "Shaxsiy ma'lumotlar",
+    update_your_info: "Ism va telefon raqamingizni o'zgartiring",
+    full_name: "To'liq ism",
+    phone: "Telefon",
+    enter_full_name: "Ismingizni kiriting",
+    email_cannot_be_changed: "Email o'zgartirib bo'lmaydi",
+    saving: "Saqlanmoqda...",
+    save_changes: "O'zgarishlarni saqlash",
+    profile: "Profil",
     
     // Language
     language: "Til",
@@ -249,6 +263,20 @@ export const translations = {
     deleted_successfully: "Успешно удалено",
     blocked_successfully: "Успешно заблокирован",
     unblocked_successfully: "Успешно разблокирован",
+    profile_updated: "Профиль успешно обновлен",
+    
+    // Profile
+    profile_settings: "Настройки профиля",
+    profile_settings_description: "Обновите свою личную информацию",
+    personal_info: "Личная информация",
+    update_your_info: "Измените имя и номер телефона",
+    full_name: "Полное имя",
+    phone: "Телефон",
+    enter_full_name: "Введите ваше имя",
+    email_cannot_be_changed: "Email нельзя изменить",
+    saving: "Сохранение...",
+    save_changes: "Сохранить изменения",
+    profile: "Профиль",
     
     // Language
     language: "Язык",
@@ -385,6 +413,20 @@ export const translations = {
     deleted_successfully: "Deleted successfully",
     blocked_successfully: "Blocked successfully",
     unblocked_successfully: "Unblocked successfully",
+    profile_updated: "Profile updated successfully",
+    
+    // Profile
+    profile_settings: "Profile Settings",
+    profile_settings_description: "Update your personal information",
+    personal_info: "Personal Information",
+    update_your_info: "Change your name and phone number",
+    full_name: "Full Name",
+    phone: "Phone",
+    enter_full_name: "Enter your name",
+    email_cannot_be_changed: "Email cannot be changed",
+    saving: "Saving...",
+    save_changes: "Save Changes",
+    profile: "Profile",
     
     // Language
     language: "Language",

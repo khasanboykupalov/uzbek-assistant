@@ -44,6 +44,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { href: '/dashboard/tenants', label: t('tenants'), icon: Users, roles: ['owner', 'admin'] },
     { href: '/dashboard/payments', label: t('payments'), icon: CreditCard, roles: ['admin'] },
     { href: '/dashboard/statistics', label: t('statistics'), icon: BarChart3, roles: ['owner', 'admin'] },
+    { href: '/dashboard/profile', label: t('profile'), icon: Users, roles: ['owner', 'admin'] },
   ];
 
   const filteredNavItems = navItems.filter((item) => 

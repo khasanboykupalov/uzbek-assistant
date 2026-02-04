@@ -16,6 +16,7 @@ import Tenants from "./pages/Tenants";
 import OwnerTenants from "./pages/OwnerTenants";
 import Payments from "./pages/Payments";
 import Statistics from "./pages/Statistics";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 // Wrapper component to render correct tenants page based on role
@@ -84,6 +85,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={['owner', 'admin']}>
                     <Statistics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['owner', 'admin']}>
+                    <Profile />
                   </ProtectedRoute>
                 }
               />
