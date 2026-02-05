@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2, Building2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { ExportButton } from '@/components/ExportButton';
+import { exportToExcel } from '@/lib/exportToExcel';
 
 type Warehouse = Tables<'warehouses'>;
 
@@ -203,6 +205,40 @@ const Warehouses = () => {
 
   const canEdit = role === 'admin';
 
+  const handleExport = () => {
+    if (filteredWarehouses.length === 0) {
+      toast({
+        title: t('error'),
+        description: t('no_data_to_export'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const exportData = filteredWarehouses.map(warehouse => ({
+      name: warehouse.name,
+      address: warehouse.address || '-',
+      description: warehouse.description || '-',
+      status: warehouse.is_active ? t('active') : t('inactive'),
+    }));
+
+    exportToExcel(
+      exportData,
+      [
+        { key: 'name', header: t('warehouse_name') },
+        { key: 'address', header: t('warehouse_address') },
+        { key: 'description', header: t('description') || 'Tavsif' },
+        { key: 'status', header: t('status') },
+      ],
+      { filename: 'omborlar', sheetName: 'Omborlar' }
+    );
+
+    toast({
+      title: t('success'),
+      description: t('export_success'),
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -213,67 +249,70 @@ const Warehouses = () => {
               {role === 'owner' ? 'Barcha omborlar' : "O'z omborlaringizni boshqaring"}
             </p>
           </div>
-          {canEdit && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('add_warehouse')}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingWarehouse ? t('edit_warehouse') : t('add_warehouse')}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{t('warehouse_name')} *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">{t('warehouse_address')}</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Tavsif</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="is_active">{t('active')}</Label>
-                    <Switch
-                      id="is_active"
-                      checked={formData.is_active}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                      {t('cancel')}
-                    </Button>
-                    <Button type="submit" className="flex-1">
-                      {t('save')}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
+          <div className="flex gap-2">
+            <ExportButton onExport={handleExport} />
+            {canEdit && (
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('add_warehouse')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingWarehouse ? t('edit_warehouse') : t('add_warehouse')}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">{t('warehouse_name')} *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">{t('warehouse_address')}</Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Tavsif</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="is_active">{t('active')}</Label>
+                      <Switch
+                        id="is_active"
+                        checked={formData.is_active}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-4">
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                        {t('cancel')}
+                      </Button>
+                      <Button type="submit" className="flex-1">
+                        {t('save')}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
