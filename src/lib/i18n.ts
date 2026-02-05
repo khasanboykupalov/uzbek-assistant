@@ -71,7 +71,8 @@ export const translations = {
     add_warehouse: "Ombor qo'shish",
     edit_warehouse: "Omborni tahrirlash",
     no_warehouses: "Omborlar topilmadi",
-    
+    description: "Tavsif",
+
     // Admins
     admins: "Adminlar",
     admin_name: "Admin ismi",
@@ -224,7 +225,8 @@ export const translations = {
     add_warehouse: "Добавить склад",
     edit_warehouse: "Редактировать склад",
     no_warehouses: "Склады не найдены",
-    
+    description: "Описание",
+
     // Admins
     admins: "Админы",
     admin_name: "Имя админа",
@@ -377,7 +379,8 @@ export const translations = {
     add_warehouse: "Add Warehouse",
     edit_warehouse: "Edit Warehouse",
     no_warehouses: "No warehouses found",
-    
+    description: "Description",
+
     // Admins
     admins: "Admins",
     admin_name: "Admin Name",
