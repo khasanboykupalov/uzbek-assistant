@@ -51,6 +51,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getMonthName } from '@/lib/i18n';
 import { ExportButton } from '@/components/ExportButton';
 import { exportToExcel } from '@/lib/exportToExcel';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Payment = Tables<'payments'>;
@@ -73,6 +74,7 @@ const Payments = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { user, role } = useAuth();
+  const { notifyOwner } = useNotifications();
   const [payments, setPayments] = useState<PaymentWithTenant[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,6 +252,16 @@ const Payments = () => {
           title: t('success'),
           description: t('created_successfully'),
         });
+
+        // Notify owner about new payment record
+        const selectedTenant = tenants.find(t => t.id === formData.tenant_id);
+        if (selectedTenant && formData.paid_amount > 0) {
+          notifyOwner(
+            'Yangi to\'lov qabul qilindi',
+            `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${getMonthName(language, formData.month)})`,
+            'success'
+          );
+        }
       }
 
       setIsDialogOpen(false);
