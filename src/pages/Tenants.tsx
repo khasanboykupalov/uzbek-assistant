@@ -44,6 +44,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ExportButton } from '@/components/ExportButton';
 import { exportToExcel } from '@/lib/exportToExcel';
+import { useNotifications } from '@/hooks/useNotifications';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Tenant = Tables<'tenants'>;
@@ -62,6 +63,7 @@ const Tenants = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user, role } = useAuth();
+  const { notifyOwner } = useNotifications();
   const [tenants, setTenants] = useState<(Tenant & { warehouse?: Warehouse })[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,6 +200,13 @@ const Tenants = () => {
           title: t('success'),
           description: t('created_successfully'),
         });
+
+        // Notify owner about new tenant
+        notifyOwner(
+          'Yangi ijarachi qo\'shildi',
+          `${formData.full_name} - ${formData.product_type} (${formData.monthly_rent.toLocaleString()} so'm)`,
+          'success'
+        );
       }
 
       setIsDialogOpen(false);

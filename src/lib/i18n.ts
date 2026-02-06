@@ -132,6 +132,11 @@ export const translations = {
     export_success: "Ma'lumotlar muvaffaqiyatli yuklandi",
     no_data_to_export: "Eksport qilish uchun ma'lumot yo'q",
     
+    // Notifications
+    notifications: "Bildirishnomalar",
+    no_notifications: "Bildirishnomalar yo'q",
+    mark_all_read: "Barchasini o'qilgan deb belgilash",
+    
     // Language
     language: "Til",
     uzbek: "O'zbekcha",
@@ -286,6 +291,11 @@ export const translations = {
     export_success: "Данные успешно экспортированы",
     no_data_to_export: "Нет данных для экспорта",
     
+    // Notifications
+    notifications: "Уведомления",
+    no_notifications: "Нет уведомлений",
+    mark_all_read: "Отметить все как прочитанные",
+    
     // Language
     language: "Язык",
     uzbek: "Узбекский",
@@ -439,6 +449,11 @@ export const translations = {
     export_excel: "Export to Excel",
     export_success: "Data exported successfully",
     no_data_to_export: "No data to export",
+    
+    // Notifications
+    notifications: "Notifications",
+    no_notifications: "No notifications",
+    mark_all_read: "Mark all as read",
     
     // Language
     language: "Language",

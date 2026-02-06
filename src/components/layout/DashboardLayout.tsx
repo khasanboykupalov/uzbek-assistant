@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -139,6 +140,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </Link>
 
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <LanguageSelector />
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -175,7 +177,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden lg:flex sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-6 py-4 justify-end">
+        <header className="hidden lg:flex sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-6 py-4 justify-end items-center gap-3">
+          <NotificationBell />
           <LanguageSelector />
         </header>
 
