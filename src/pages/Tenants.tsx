@@ -45,6 +45,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExportButton } from '@/components/ExportButton';
 import { exportToExcel } from '@/lib/exportToExcel';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCard, MobileCardHeader, MobileCardRow, MobileCardDivider } from '@/components/MobileCard';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Tenant = Tables<'tenants'>;
@@ -64,6 +66,7 @@ const Tenants = () => {
   const { toast } = useToast();
   const { user, role } = useAuth();
   const { notifyOwner } = useNotifications();
+  const isMobile = useIsMobile();
   const [tenants, setTenants] = useState<(Tenant & { warehouse?: Warehouse })[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -294,11 +297,11 @@ const Tenants = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="space-y-4 lg:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{t('tenants')}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl lg:text-3xl font-bold">{t('tenants')}</h1>
+            <p className="text-muted-foreground text-sm lg:text-base mt-1">
               Ijarachilarni boshqaring
             </p>
           </div>
@@ -307,9 +310,10 @@ const Tenants = () => {
             {canEdit && (
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => handleOpenDialog()}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t('add_tenant')}
+                  <Button onClick={() => handleOpenDialog()} size={isMobile ? "sm" : "default"}>
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    <span className="hidden sm:inline">{t('add_tenant')}</span>
+                    <span className="sm:hidden">Qo'shish</span>
                   </Button>
                 </DialogTrigger>
               <DialogContent>
@@ -412,14 +416,95 @@ const Tenants = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              {t('tenants')} ({filteredTenants.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Desktop Table View */}
+        {!isMobile && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {t('tenants')} ({filteredTenants.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
+              ) : filteredTenants.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? 'Hech narsa topilmadi' : t('no_tenants')}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('tenant_name')}</TableHead>
+                        <TableHead>{t('tenant_phone')}</TableHead>
+                        <TableHead>{t('product_type')}</TableHead>
+                        <TableHead>{t('warehouse')}</TableHead>
+                        <TableHead>{t('monthly_rent')}</TableHead>
+                        <TableHead>{t('status')}</TableHead>
+                        {canEdit && <TableHead className="text-right">{t('actions')}</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTenants.map((tenant) => (
+                        <TableRow key={tenant.id}>
+                          <TableCell className="font-medium">{tenant.full_name}</TableCell>
+                          <TableCell>{tenant.phone}</TableCell>
+                          <TableCell>{tenant.product_type}</TableCell>
+                          <TableCell>{tenant.warehouse?.name || '-'}</TableCell>
+                          <TableCell>{formatCurrency(Number(tenant.monthly_rent))}</TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                tenant.is_active
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              }`}
+                            >
+                              {tenant.is_active ? t('active') : t('inactive')}
+                            </span>
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleOpenDialog(tenant)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setDeletingTenant(tenant);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mobile Card View */}
+        {isMobile && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="font-semibold">{t('tenants')} ({filteredTenants.length})</span>
+            </div>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
             ) : filteredTenants.length === 0 ? (
@@ -427,69 +512,60 @@ const Tenants = () => {
                 {searchQuery ? 'Hech narsa topilmadi' : t('no_tenants')}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('tenant_name')}</TableHead>
-                      <TableHead>{t('tenant_phone')}</TableHead>
-                      <TableHead>{t('product_type')}</TableHead>
-                      <TableHead>{t('warehouse')}</TableHead>
-                      <TableHead>{t('monthly_rent')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                      {canEdit && <TableHead className="text-right">{t('actions')}</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTenants.map((tenant) => (
-                      <TableRow key={tenant.id}>
-                        <TableCell className="font-medium">{tenant.full_name}</TableCell>
-                        <TableCell>{tenant.phone}</TableCell>
-                        <TableCell>{tenant.product_type}</TableCell>
-                        <TableCell>{tenant.warehouse?.name || '-'}</TableCell>
-                        <TableCell>{formatCurrency(Number(tenant.monthly_rent))}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              tenant.is_active
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            }`}
+              filteredTenants.map((tenant) => (
+                <MobileCard key={tenant.id}>
+                  <MobileCardHeader
+                    title={tenant.full_name}
+                    subtitle={tenant.phone}
+                    actions={
+                      canEdit && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleOpenDialog(tenant)}
                           >
-                            {tenant.is_active ? t('active') : t('inactive')}
-                          </span>
-                        </TableCell>
-                        {canEdit && (
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenDialog(tenant)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setDeletingTenant(tenant);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setDeletingTenant(tenant);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      )
+                    }
+                  />
+                  <MobileCardDivider />
+                  <MobileCardRow label={t('product_type')} value={tenant.product_type} />
+                  <MobileCardRow label={t('warehouse')} value={tenant.warehouse?.name || '-'} />
+                  <MobileCardRow label={t('monthly_rent')} value={formatCurrency(Number(tenant.monthly_rent))} />
+                  <MobileCardRow
+                    label={t('status')}
+                    value={
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          tenant.is_active
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}
+                      >
+                        {tenant.is_active ? t('active') : t('inactive')}
+                      </span>
+                    }
+                  />
+                </MobileCard>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
