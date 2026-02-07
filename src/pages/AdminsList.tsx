@@ -33,6 +33,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ExportButton } from '@/components/ExportButton';
 import { exportToExcel } from '@/lib/exportToExcel';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCard, MobileCardHeader, MobileCardRow, MobileCardDivider } from '@/components/MobileCard';
 import { z } from 'zod';
 
 const adminSchema = z.object({
@@ -60,6 +62,7 @@ interface Admin {
 const AdminsList = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -352,23 +355,24 @@ const AdminsList = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 lg:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-3">
-              <UserCog className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2 lg:gap-3">
+              <UserCog className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
               {t('admins')}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground text-sm lg:text-base mt-1">
               Ombor adminlarini boshqarish
             </p>
           </div>
           <div className="flex gap-2">
             <ExportButton onExport={handleExport} />
-            <Button onClick={() => setIsAddDialogOpen(true)} className="gradient-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              {t('add_admin')}
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gradient-primary" size={isMobile ? "sm" : "default"}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">{t('add_admin')}</span>
+              <span className="sm:hidden">Qo'shish</span>
             </Button>
           </div>
         </div>
@@ -384,9 +388,85 @@ const AdminsList = () => {
           />
         </div>
 
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
+        {/* Desktop Table View */}
+        {!isMobile && (
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredAdmins.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserCog className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">{t('no_admins')}</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('admin_name')}</TableHead>
+                      <TableHead>{t('admin_email')}</TableHead>
+                      <TableHead>{t('admin_phone')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      <TableHead className="w-[80px]">{t('actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAdmins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell className="font-medium">{admin.full_name}</TableCell>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>{admin.phone}</TableCell>
+                        <TableCell>
+                          <Badge variant={admin.is_blocked ? 'destructive' : 'default'}>
+                            {admin.is_blocked ? t('blocked') : t('active')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(admin)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                {t('edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleBlock(admin)}>
+                                {admin.is_blocked ? (
+                                  <>
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    {t('unblock')}
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldOff className="h-4 w-4 mr-2" />
+                                    {t('block')}
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mobile Card View */}
+        {isMobile && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <UserCog className="h-5 w-5 text-primary" />
+              <span className="font-semibold">{t('admins')} ({filteredAdmins.length})</span>
+            </div>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -397,62 +477,55 @@ const AdminsList = () => {
                 <p className="text-muted-foreground">{t('no_admins')}</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('admin_name')}</TableHead>
-                    <TableHead>{t('admin_email')}</TableHead>
-                    <TableHead>{t('admin_phone')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    <TableHead className="w-[80px]">{t('actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAdmins.map((admin) => (
-                    <TableRow key={admin.id}>
-                      <TableCell className="font-medium">{admin.full_name}</TableCell>
-                      <TableCell>{admin.email}</TableCell>
-                      <TableCell>{admin.phone}</TableCell>
-                      <TableCell>
-                        <Badge variant={admin.is_blocked ? 'destructive' : 'default'}>
-                          {admin.is_blocked ? t('blocked') : t('active')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditDialog(admin)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              {t('edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleBlock(admin)}>
-                              {admin.is_blocked ? (
-                                <>
-                                  <Shield className="h-4 w-4 mr-2" />
-                                  {t('unblock')}
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldOff className="h-4 w-4 mr-2" />
-                                  {t('block')}
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              filteredAdmins.map((admin) => (
+                <MobileCard key={admin.id}>
+                  <MobileCardHeader
+                    title={admin.full_name}
+                    subtitle={admin.email}
+                    actions={
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenEditDialog(admin)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            {t('edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleBlock(admin)}>
+                            {admin.is_blocked ? (
+                              <>
+                                <Shield className="h-4 w-4 mr-2" />
+                                {t('unblock')}
+                              </>
+                            ) : (
+                              <>
+                                <ShieldOff className="h-4 w-4 mr-2" />
+                                {t('block')}
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    }
+                  />
+                  <MobileCardDivider />
+                  <MobileCardRow label={t('admin_phone')} value={admin.phone || '-'} />
+                  <MobileCardRow
+                    label={t('status')}
+                    value={
+                      <Badge variant={admin.is_blocked ? 'destructive' : 'default'}>
+                        {admin.is_blocked ? t('blocked') : t('active')}
+                      </Badge>
+                    }
+                  />
+                </MobileCard>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
 
       {/* Add Admin Dialog */}

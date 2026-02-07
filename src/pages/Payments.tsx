@@ -52,6 +52,8 @@ import { getMonthName } from '@/lib/i18n';
 import { ExportButton } from '@/components/ExportButton';
 import { exportToExcel } from '@/lib/exportToExcel';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCard, MobileCardHeader, MobileCardRow, MobileCardDivider } from '@/components/MobileCard';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Payment = Tables<'payments'>;
@@ -75,6 +77,7 @@ const Payments = () => {
   const { toast } = useToast();
   const { user, role } = useAuth();
   const { notifyOwner } = useNotifications();
+  const isMobile = useIsMobile();
   const [payments, setPayments] = useState<PaymentWithTenant[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,52 +417,28 @@ const Payments = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">{t('payments')}</h1>
-            <p className="text-muted-foreground mt-1">
-              To'lovlarni boshqaring va qarzlarni kuzating
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <ExportButton onExport={handleExport} />
-            <div className="flex gap-2">
-              <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(Number(v))}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((m) => (
-                    <SelectItem key={m} value={m.toString()}>
-                      {getMonthName(language, m)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="space-y-4 lg:space-y-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">{t('payments')}</h1>
+              <p className="text-muted-foreground text-sm lg:text-base mt-1">
+                To'lovlarni boshqaring va qarzlarni kuzating
+              </p>
             </div>
-            {canEdit && (
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={handleOpenDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t('record_payment')}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
+            <div className="flex items-center gap-2 flex-wrap">
+              <ExportButton onExport={handleExport} />
+              {canEdit && (
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={handleOpenDialog} size={isMobile ? "sm" : "default"}>
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      <span className="hidden sm:inline">{t('record_payment')}</span>
+                      <span className="sm:hidden">To'lov</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
                     <DialogTitle>{t('record_payment')}</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -559,9 +538,38 @@ const Payments = () => {
                       </Button>
                     </div>
                   </form>
-                </DialogContent>
-              </Dialog>
-            )}
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          </div>
+          
+          {/* Month/Year Selectors */}
+          <div className="flex gap-2">
+            <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-[120px] sm:w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {getMonthName(language, m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-[90px] sm:w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={y.toString()}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -576,13 +584,13 @@ const Payments = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm text-muted-foreground">{t('paid_amount')}</div>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
+              <div className="text-2xl font-bold text-success">{formatCurrency(totalPaid)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm text-muted-foreground">{t('remaining')}</div>
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(totalRemaining)}</div>
+              <div className="text-2xl font-bold text-destructive">{formatCurrency(totalRemaining)}</div>
             </CardContent>
           </Card>
         </div>
@@ -598,14 +606,121 @@ const Payments = () => {
           />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              {getMonthName(language, selectedMonth)} {selectedYear} - {t('payments')} ({filteredPayments.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Desktop Table View */}
+        {!isMobile && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                {getMonthName(language, selectedMonth)} {selectedYear} - {t('payments')} ({filteredPayments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
+              ) : filteredPayments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  {searchQuery ? 'Hech narsa topilmadi' : 'Bu oy uchun to\'lov qayd etilmagan'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ijarachi</TableHead>
+                        <TableHead>{t('expected_amount')}</TableHead>
+                        <TableHead>{t('carry_over')}</TableHead>
+                        <TableHead>Jami</TableHead>
+                        <TableHead>{t('paid_amount')}</TableHead>
+                        <TableHead>{t('remaining')}</TableHead>
+                        <TableHead>{t('status')}</TableHead>
+                        {canEdit && <TableHead className="w-[80px]">{t('actions')}</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPayments.map((payment) => {
+                        const total = Number(payment.expected_amount) + Number(payment.carry_over_debt);
+                        const remaining = total - Number(payment.paid_amount);
+                        const status = getPaymentStatus(payment);
+                        
+                        return (
+                          <TableRow key={payment.id}>
+                            <TableCell className="font-medium">{payment.tenant?.full_name || '-'}</TableCell>
+                            <TableCell>{formatCurrency(Number(payment.expected_amount))}</TableCell>
+                            <TableCell>
+                              {Number(payment.carry_over_debt) > 0 && (
+                                <span className="text-warning">
+                                  +{formatCurrency(Number(payment.carry_over_debt))}
+                                </span>
+                              )}
+                              {Number(payment.carry_over_debt) === 0 && '-'}
+                            </TableCell>
+                            <TableCell className="font-medium">{formatCurrency(total)}</TableCell>
+                            <TableCell className="text-success">{formatCurrency(Number(payment.paid_amount))}</TableCell>
+                            <TableCell className={remaining > 0 ? 'text-destructive' : ''}>
+                              {remaining > 0 ? formatCurrency(remaining) : '-'}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  status === 'paid'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                    : status === 'partial'
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                }`}
+                              >
+                                {status === 'paid' ? "To'langan" : status === 'partial' ? "Qisman" : "To'lanmagan"}
+                              </span>
+                            </TableCell>
+                            {canEdit && (
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(payment)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      {t('edit')}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setDeletingPayment(payment);
+                                        setIsDeleteDialogOpen(true);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {t('delete')}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mobile Card View */}
+        {isMobile && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <CreditCard className="h-5 w-5 text-primary" />
+              <span className="font-semibold">
+                {getMonthName(language, selectedMonth)} {selectedYear} ({filteredPayments.length})
+              </span>
+            </div>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
             ) : filteredPayments.length === 0 ? (
@@ -614,92 +729,79 @@ const Payments = () => {
                 {searchQuery ? 'Hech narsa topilmadi' : 'Bu oy uchun to\'lov qayd etilmagan'}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ijarachi</TableHead>
-                      <TableHead>{t('expected_amount')}</TableHead>
-                      <TableHead>{t('carry_over')}</TableHead>
-                      <TableHead>Jami</TableHead>
-                      <TableHead>{t('paid_amount')}</TableHead>
-                      <TableHead>{t('remaining')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                      {canEdit && <TableHead className="w-[80px]">{t('actions')}</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments.map((payment) => {
-                      const total = Number(payment.expected_amount) + Number(payment.carry_over_debt);
-                      const remaining = total - Number(payment.paid_amount);
-                      const status = getPaymentStatus(payment);
-                      
-                      return (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.tenant?.full_name || '-'}</TableCell>
-                          <TableCell>{formatCurrency(Number(payment.expected_amount))}</TableCell>
-                          <TableCell>
-                            {Number(payment.carry_over_debt) > 0 && (
-                              <span className="text-orange-600">
-                                +{formatCurrency(Number(payment.carry_over_debt))}
-                              </span>
-                            )}
-                            {Number(payment.carry_over_debt) === 0 && '-'}
-                          </TableCell>
-                          <TableCell className="font-medium">{formatCurrency(total)}</TableCell>
-                          <TableCell className="text-green-600">{formatCurrency(Number(payment.paid_amount))}</TableCell>
-                          <TableCell className={remaining > 0 ? 'text-red-600' : ''}>
-                            {remaining > 0 ? formatCurrency(remaining) : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                status === 'paid'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                  : status === 'partial'
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              }`}
-                            >
-                              {status === 'paid' ? "To'langan" : status === 'partial' ? "Qisman" : "To'lanmagan"}
-                            </span>
-                          </TableCell>
-                          {canEdit && (
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(payment)}>
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    {t('edit')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setDeletingPayment(payment);
-                                      setIsDeleteDialogOpen(true);
-                                    }}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    {t('delete')}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              filteredPayments.map((payment) => {
+                const total = Number(payment.expected_amount) + Number(payment.carry_over_debt);
+                const remaining = total - Number(payment.paid_amount);
+                const status = getPaymentStatus(payment);
+                
+                return (
+                  <MobileCard key={payment.id}>
+                    <MobileCardHeader
+                      title={payment.tenant?.full_name || '-'}
+                      subtitle={payment.tenant?.phone}
+                      actions={
+                        canEdit && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(payment)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                {t('edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setDeletingPayment(payment);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t('delete')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )
+                      }
+                    />
+                    <MobileCardDivider />
+                    <MobileCardRow label={t('expected_amount')} value={formatCurrency(Number(payment.expected_amount))} />
+                    {Number(payment.carry_over_debt) > 0 && (
+                      <MobileCardRow 
+                        label={t('carry_over')} 
+                        value={<span className="text-warning">+{formatCurrency(Number(payment.carry_over_debt))}</span>} 
+                      />
+                    )}
+                    <MobileCardRow label="Jami" value={<span className="font-semibold">{formatCurrency(total)}</span>} />
+                    <MobileCardRow label={t('paid_amount')} value={<span className="text-success">{formatCurrency(Number(payment.paid_amount))}</span>} />
+                    {remaining > 0 && (
+                      <MobileCardRow label={t('remaining')} value={<span className="text-destructive">{formatCurrency(remaining)}</span>} />
+                    )}
+                    <MobileCardRow
+                      label={t('status')}
+                      value={
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            status === 'paid'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : status === 'partial'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          }`}
+                        >
+                          {status === 'paid' ? "To'langan" : status === 'partial' ? "Qisman" : "To'lanmagan"}
+                        </span>
+                      }
+                    />
+                  </MobileCard>
+                );
+              })
             )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
 
       {/* Edit Payment Dialog */}
