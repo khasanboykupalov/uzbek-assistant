@@ -10,6 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCard, MobileCardHeader, MobileCardRow, MobileCardDivider } from '@/components/MobileCard';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -41,6 +44,7 @@ const OwnerTenants = () => {
   const [admins, setAdmins] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const isMobile = useIsMobile();
   const [selectedAdminId, setSelectedAdminId] = useState<string>('all');
 
   const filteredTenants = useMemo(() => {
@@ -225,48 +229,65 @@ const OwnerTenants = () => {
                 {searchQuery || selectedAdminId !== 'all' ? 'Hech narsa topilmadi' : t('no_tenants')}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('tenant_name')}</TableHead>
-                      <TableHead>{t('tenant_phone')}</TableHead>
-                      <TableHead>{t('product_type')}</TableHead>
-                      <TableHead>{t('warehouse')}</TableHead>
-                      <TableHead>{t('monthly_rent')}</TableHead>
-                      <TableHead>{t('admin')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTenants.map((tenant) => (
-                      <TableRow key={tenant.id}>
-                        <TableCell className="font-medium">{tenant.full_name}</TableCell>
-                        <TableCell>{tenant.phone}</TableCell>
-                        <TableCell>{tenant.product_type}</TableCell>
-                        <TableCell>{tenant.warehouse?.name || '-'}</TableCell>
-                        <TableCell>{formatCurrency(Number(tenant.monthly_rent))}</TableCell>
-                        <TableCell>
-                          <span className="text-muted-foreground">
-                            {tenant.admin_profile?.full_name || '-'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              tenant.is_active
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            }`}
-                          >
+              isMobile ? (
+                <div className="space-y-3">
+                  {filteredTenants.map((tenant) => (
+                    <MobileCard key={tenant.id}>
+                      <MobileCardHeader
+                        title={tenant.full_name}
+                        subtitle={tenant.phone}
+                        actions={
+                          <Badge variant={tenant.is_active ? 'default' : 'destructive'}>
                             {tenant.is_active ? t('active') : t('inactive')}
-                          </span>
-                        </TableCell>
+                          </Badge>
+                        }
+                      />
+                      <MobileCardDivider />
+                      <MobileCardRow label={t('product_type')} value={tenant.product_type} />
+                      <MobileCardRow label={t('warehouse')} value={tenant.warehouse?.name || '-'} />
+                      <MobileCardRow label={t('monthly_rent')} value={formatCurrency(Number(tenant.monthly_rent))} />
+                      <MobileCardRow label={t('admin')} value={tenant.admin_profile?.full_name || '-'} />
+                    </MobileCard>
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('tenant_name')}</TableHead>
+                        <TableHead>{t('tenant_phone')}</TableHead>
+                        <TableHead>{t('product_type')}</TableHead>
+                        <TableHead>{t('warehouse')}</TableHead>
+                        <TableHead>{t('monthly_rent')}</TableHead>
+                        <TableHead>{t('admin')}</TableHead>
+                        <TableHead>{t('status')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTenants.map((tenant) => (
+                        <TableRow key={tenant.id}>
+                          <TableCell className="font-medium">{tenant.full_name}</TableCell>
+                          <TableCell>{tenant.phone}</TableCell>
+                          <TableCell>{tenant.product_type}</TableCell>
+                          <TableCell>{tenant.warehouse?.name || '-'}</TableCell>
+                          <TableCell>{formatCurrency(Number(tenant.monthly_rent))}</TableCell>
+                          <TableCell>
+                            <span className="text-muted-foreground">
+                              {tenant.admin_profile?.full_name || '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={tenant.is_active ? 'default' : 'destructive'}>
+                              {tenant.is_active ? t('active') : t('inactive')}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
             )}
           </CardContent>
         </Card>
