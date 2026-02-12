@@ -70,6 +70,8 @@ interface PaymentFormData {
   expected_amount: number;
   paid_amount: number;
   notes: string;
+  isAdvancePayment?: boolean;
+  advanceMonths?: number;
 }
 
 const Payments = () => {
@@ -96,6 +98,8 @@ const Payments = () => {
     expected_amount: 0,
     paid_amount: 0,
     notes: '',
+    isAdvancePayment: false,
+    advanceMonths: 1,
   });
   const [editFormData, setEditFormData] = useState({
     paid_amount: 0,
@@ -164,6 +168,8 @@ const Payments = () => {
       expected_amount: tenants[0]?.monthly_rent ? Number(tenants[0].monthly_rent) : 0,
       paid_amount: 0,
       notes: '',
+      isAdvancePayment: false,
+      advanceMonths: 1,
     });
     setIsDialogOpen(true);
   };
@@ -207,63 +213,130 @@ const Payments = () => {
     if (!user) return;
 
     try {
-      // Check if payment already exists
-      const { data: existingPayment } = await supabase
-        .from('payments')
-        .select('id')
-        .eq('tenant_id', formData.tenant_id)
-        .eq('month', formData.month)
-        .eq('year', formData.year)
-        .maybeSingle();
+      const selectedTenant = tenants.find(t => t.id === formData.tenant_id);
+      
+      if (formData.isAdvancePayment && (formData.advanceMonths || 0) > 1) {
+        // Handle advance payment - create multiple payment records
+        const monthsToCreate = formData.advanceMonths || 1;
+        const amountPerMonth = Math.round(formData.paid_amount / monthsToCreate);
+        
+        let currentMonth = formData.month;
+        let currentYear = formData.year;
+        
+        for (let i = 0; i < monthsToCreate; i++) {
+          const { data: existingPayment } = await supabase
+            .from('payments')
+            .select('id')
+            .eq('tenant_id', formData.tenant_id)
+            .eq('month', currentMonth)
+            .eq('year', currentYear)
+            .maybeSingle();
 
-      // Calculate carry over debt from previous month
-      const carryOver = await calculateCarryOver(formData.tenant_id, formData.month, formData.year);
+          const carryOver = await calculateCarryOver(formData.tenant_id, currentMonth, currentYear);
+          
+          if (existingPayment) {
+            // Update existing payment
+            await supabase
+              .from('payments')
+              .update({
+                paid_amount: amountPerMonth,
+                notes: (formData.notes ? formData.notes + ' (Oldindan to\'lov)' : 'Oldindan to\'lov'),
+                payment_date: new Date().toISOString(),
+              })
+              .eq('id', existingPayment.id);
+          } else {
+            // Create new payment
+            await supabase
+              .from('payments')
+              .insert({
+                tenant_id: formData.tenant_id,
+                month: currentMonth,
+                year: currentYear,
+                expected_amount: formData.expected_amount,
+                paid_amount: amountPerMonth,
+                carry_over_debt: carryOver,
+                notes: formData.notes ? formData.notes + ' (Oldindan to\'lov)' : 'Oldindan to\'lov',
+                payment_date: new Date().toISOString(),
+              });
+          }
 
-      if (existingPayment) {
-        // Update existing payment
-        const { error } = await supabase
-          .from('payments')
-          .update({
-            paid_amount: formData.paid_amount,
-            notes: formData.notes || null,
-            payment_date: new Date().toISOString(),
-          })
-          .eq('id', existingPayment.id);
+          // Move to next month
+          currentMonth++;
+          if (currentMonth > 12) {
+            currentMonth = 1;
+            currentYear++;
+          }
+        }
 
-        if (error) throw error;
-        toast({
-          title: t('success'),
-          description: t('updated_successfully'),
-        });
-      } else {
-        // Create new payment
-        const { error } = await supabase
-          .from('payments')
-          .insert({
-            tenant_id: formData.tenant_id,
-            month: formData.month,
-            year: formData.year,
-            expected_amount: formData.expected_amount,
-            paid_amount: formData.paid_amount,
-            carry_over_debt: carryOver,
-            notes: formData.notes || null,
-            payment_date: formData.paid_amount > 0 ? new Date().toISOString() : null,
-          });
-
-        if (error) throw error;
-        toast({
-          title: t('success'),
-          description: t('created_successfully'),
-        });
-
-        // Notify owner about new payment record
-        const selectedTenant = tenants.find(t => t.id === formData.tenant_id);
         if (selectedTenant && formData.paid_amount > 0) {
           notifyOwner(
-            'Yangi to\'lov qabul qilindi',
-            `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${getMonthName(language, formData.month)})`,
+            'Oldindan to\'lov qabul qilindi',
+            `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${monthsToCreate} oy)`,
             'success'
           );
+        }
+
+        toast({
+          title: t('success'),
+          description: `${monthsToCreate} oylik to'lov qayd etildi`,
+        });
+      } else {
+        // Handle regular payment
+        const { data: existingPayment } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('tenant_id', formData.tenant_id)
+          .eq('month', formData.month)
+          .eq('year', formData.year)
+          .maybeSingle();
+
+        const carryOver = await calculateCarryOver(formData.tenant_id, formData.month, formData.year);
+
+        if (existingPayment) {
+          // Update existing payment
+          const { error } = await supabase
+            .from('payments')
+            .update({
+              paid_amount: formData.paid_amount,
+              notes: formData.notes || null,
+              payment_date: new Date().toISOString(),
+            })
+            .eq('id', existingPayment.id);
+
+          if (error) throw error;
+          toast({
+            title: t('success'),
+            description: t('updated_successfully'),
+          });
+        } else {
+          // Create new payment
+          const { error } = await supabase
+            .from('payments')
+            .insert({
+              tenant_id: formData.tenant_id,
+              month: formData.month,
+              year: formData.year,
+              expected_amount: formData.expected_amount,
+              paid_amount: formData.paid_amount,
+              carry_over_debt: carryOver,
+              notes: formData.notes || null,
+              payment_date: formData.paid_amount > 0 ? new Date().toISOString() : null,
+            });
+
+          if (error) throw error;
+          toast({
+            title: t('success'),
+            description: t('created_successfully'),
+          });
+
+          // Notify owner about new payment record
+          if (selectedTenant && formData.paid_amount > 0) {
+            notifyOwner(
+              'Yangi to\'lov qabul qilindi',
+              `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${getMonthName(language, formData.month)})`,
+              'success'
+            );
+          }
         }
       }
 
@@ -498,6 +571,38 @@ const Payments = () => {
                         </Select>
                       </div>
                     </div>
+                    
+                    {/* Advance Payment Toggle */}
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.isAdvancePayment || false}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            isAdvancePayment: e.target.checked,
+                            advanceMonths: e.target.checked ? 1 : undefined
+                          })}
+                          className="rounded"
+                        />
+                        <span className="text-sm font-medium">Oldindan to'lov (bir necha oyga)</span>
+                      </label>
+                    </div>
+
+                    {formData.isAdvancePayment && (
+                      <div className="space-y-2">
+                        <Label htmlFor="advance_months">Oylar soni</Label>
+                        <Input
+                          id="advance_months"
+                          type="number"
+                          min="1"
+                          max="12"
+                          value={formData.advanceMonths || 1}
+                          onChange={(e) => setFormData({ ...formData, advanceMonths: Number(e.target.value) || 1 })}
+                        />
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
                       <Label htmlFor="expected_amount">{t('expected_amount')} (so'm)</Label>
                       <Input
