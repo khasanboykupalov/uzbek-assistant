@@ -148,10 +148,20 @@ export const useAdminStats = () => {
       const tenantIds = tenants?.map(t => t.id) || [];
 
       // Get payments for admin's tenants this month
+      if (tenantIds.length === 0) {
+        return {
+          totalIncome: 0,
+          totalTenants: 0,
+          paidTenants: 0,
+          unpaidTenants: 0,
+          totalWarehouses: warehouses?.length || 0,
+        };
+      }
+
       const { data: payments } = await supabase
         .from('payments')
         .select('paid_amount, expected_amount, tenant_id')
-        .in('tenant_id', tenantIds.length > 0 ? tenantIds : ['none'])
+        .in('tenant_id', tenantIds)
         .eq('month', month)
         .eq('year', year);
 
