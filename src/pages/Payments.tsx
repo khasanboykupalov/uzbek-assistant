@@ -503,8 +503,9 @@ const Payments = () => {
                       <Input
                         id="expected_amount"
                         type="number"
-                        value={formData.expected_amount}
-                        onChange={(e) => setFormData({ ...formData, expected_amount: Number(e.target.value) })}
+                        value={formData.expected_amount || ''}
+                        onChange={(e) => setFormData({ ...formData, expected_amount: Number(e.target.value) || 0 })}
+                        onFocus={(e) => e.target.select()}
                         min="0"
                         required
                       />
@@ -514,8 +515,9 @@ const Payments = () => {
                       <Input
                         id="paid_amount"
                         type="number"
-                        value={formData.paid_amount}
-                        onChange={(e) => setFormData({ ...formData, paid_amount: Number(e.target.value) })}
+                        value={formData.paid_amount || ''}
+                        onChange={(e) => setFormData({ ...formData, paid_amount: Number(e.target.value) || 0 })}
+                        onFocus={(e) => e.target.select()}
                         min="0"
                         required
                       />
@@ -840,8 +842,9 @@ const Payments = () => {
               <Input
                 id="edit_paid_amount"
                 type="number"
-                value={editFormData.paid_amount}
-                onChange={(e) => setEditFormData({ ...editFormData, paid_amount: Number(e.target.value) })}
+                value={editFormData.paid_amount || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, paid_amount: Number(e.target.value) || 0 })}
+                onFocus={(e) => e.target.select()}
                 min="0"
               />
             </div>
