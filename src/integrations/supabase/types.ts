@@ -269,6 +269,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_advance_payments: {
+        Args: {
+          p_amount_per_month: number
+          p_expected_amount: number
+          p_months_count: number
+          p_notes?: string
+          p_start_month: number
+          p_start_year: number
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
