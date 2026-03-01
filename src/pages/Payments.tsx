@@ -216,57 +216,21 @@ const Payments = () => {
       const selectedTenant = tenants.find(t => t.id === formData.tenant_id);
       
       if (formData.isAdvancePayment && (formData.advanceMonths || 0) > 1) {
-        // Handle advance payment - create multiple payment records
+        // Handle advance payment atomically via DB function
         const monthsToCreate = formData.advanceMonths || 1;
         const amountPerMonth = Math.round(formData.paid_amount / monthsToCreate);
         
-        let currentMonth = formData.month;
-        let currentYear = formData.year;
-        
-        for (let i = 0; i < monthsToCreate; i++) {
-          const { data: existingPayment } = await supabase
-            .from('payments')
-            .select('id')
-            .eq('tenant_id', formData.tenant_id)
-            .eq('month', currentMonth)
-            .eq('year', currentYear)
-            .maybeSingle();
+        const { data, error } = await supabase.rpc('create_advance_payments', {
+          p_tenant_id: formData.tenant_id,
+          p_start_month: formData.month,
+          p_start_year: formData.year,
+          p_months_count: monthsToCreate,
+          p_amount_per_month: amountPerMonth,
+          p_expected_amount: formData.expected_amount,
+          p_notes: formData.notes || null,
+        });
 
-          const carryOver = await calculateCarryOver(formData.tenant_id, currentMonth, currentYear);
-          
-          if (existingPayment) {
-            // Update existing payment
-            await supabase
-              .from('payments')
-              .update({
-                paid_amount: amountPerMonth,
-                notes: (formData.notes ? formData.notes + ' (Oldindan to\'lov)' : 'Oldindan to\'lov'),
-                payment_date: new Date().toISOString(),
-              })
-              .eq('id', existingPayment.id);
-          } else {
-            // Create new payment
-            await supabase
-              .from('payments')
-              .insert({
-                tenant_id: formData.tenant_id,
-                month: currentMonth,
-                year: currentYear,
-                expected_amount: formData.expected_amount,
-                paid_amount: amountPerMonth,
-                carry_over_debt: carryOver,
-                notes: formData.notes ? formData.notes + ' (Oldindan to\'lov)' : 'Oldindan to\'lov',
-                payment_date: new Date().toISOString(),
-              });
-          }
-
-          // Move to next month
-          currentMonth++;
-          if (currentMonth > 12) {
-            currentMonth = 1;
-            currentYear++;
-          }
-        }
+        if (error) throw error;
 
         if (selectedTenant && formData.paid_amount > 0) {
           notifyOwner(
@@ -281,62 +245,36 @@ const Payments = () => {
           description: `${monthsToCreate} oylik to'lov qayd etildi`,
         });
       } else {
-        // Handle regular payment
-        const { data: existingPayment } = await supabase
-          .from('payments')
-          .select('id')
-          .eq('tenant_id', formData.tenant_id)
-          .eq('month', formData.month)
-          .eq('year', formData.year)
-          .maybeSingle();
-
+        // Handle regular payment with upsert
         const carryOver = await calculateCarryOver(formData.tenant_id, formData.month, formData.year);
 
-        if (existingPayment) {
-          // Update existing payment
-          const { error } = await supabase
-            .from('payments')
-            .update({
-              paid_amount: formData.paid_amount,
-              notes: formData.notes || null,
-              payment_date: new Date().toISOString(),
-            })
-            .eq('id', existingPayment.id);
+        const { error } = await supabase
+          .from('payments')
+          .upsert({
+            tenant_id: formData.tenant_id,
+            month: formData.month,
+            year: formData.year,
+            expected_amount: formData.expected_amount,
+            paid_amount: formData.paid_amount,
+            carry_over_debt: carryOver,
+            notes: formData.notes || null,
+            payment_date: formData.paid_amount > 0 ? new Date().toISOString() : null,
+          }, { onConflict: 'tenant_id,month,year' });
 
-          if (error) throw error;
-          toast({
-            title: t('success'),
-            description: t('updated_successfully'),
-          });
-        } else {
-          // Create new payment
-          const { error } = await supabase
-            .from('payments')
-            .insert({
-              tenant_id: formData.tenant_id,
-              month: formData.month,
-              year: formData.year,
-              expected_amount: formData.expected_amount,
-              paid_amount: formData.paid_amount,
-              carry_over_debt: carryOver,
-              notes: formData.notes || null,
-              payment_date: formData.paid_amount > 0 ? new Date().toISOString() : null,
-            });
+        if (error) throw error;
 
-          if (error) throw error;
-          toast({
-            title: t('success'),
-            description: t('created_successfully'),
-          });
+        toast({
+          title: t('success'),
+          description: t('created_successfully'),
+        });
 
-          // Notify owner about new payment record
-          if (selectedTenant && formData.paid_amount > 0) {
-            notifyOwner(
-              'Yangi to\'lov qabul qilindi',
-              `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${getMonthName(language, formData.month)})`,
-              'success'
-            );
-          }
+        // Notify owner about payment
+        if (selectedTenant && formData.paid_amount > 0) {
+          notifyOwner(
+            'Yangi to\'lov qabul qilindi',
+            `${selectedTenant.full_name} - ${formData.paid_amount.toLocaleString()} so'm (${getMonthName(language, formData.month)})`,
+            'success'
+          );
         }
       }
 
