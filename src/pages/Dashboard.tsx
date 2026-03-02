@@ -10,11 +10,6 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { IncomeChart } from '@/components/dashboard/IncomeChart';
-import { PaymentStatusChart } from '@/components/dashboard/PaymentStatusChart';
-import { TenantsByProductChart } from '@/components/dashboard/TenantsByProductChart';
-import { AdminPerformanceChart } from '@/components/dashboard/AdminPerformanceChart';
-import { MonthlyTrendChart } from '@/components/dashboard/MonthlyTrendChart';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,110 +138,168 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Charts Section */}
+        {/* Data Tables Section */}
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Skeleton className="h-[300px] w-full" />
-            <Skeleton className="h-[300px] w-full" />
+            <Skeleton className="h-[200px] w-full" />
+            <Skeleton className="h-[200px] w-full" />
           </div>
-        ) : isOwner ? (
-          <>
-            {/* Owner Charts - Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <IncomeChart data={monthlyIncomeData || []} />
-              <PaymentStatusChart paid={ownerStats?.paidTenants || 0} unpaid={ownerStats?.unpaidTenants || 0} />
-            </div>
-
-            {/* Owner Charts - Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <AdminPerformanceChart data={adminPerformanceData || []} />
-              <TenantsByProductChart data={productTypeData || []} />
-            </div>
-
-            {/* Owner Charts - Row 3 */}
-            <MonthlyTrendChart data={monthlyTrendData || []} />
-          </>
         ) : (
           <>
-            {/* Admin Charts - Row 1 */}
+            {/* Row 1: Monthly Income + Payment Status */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <IncomeChart data={monthlyIncomeData || []} />
-              <PaymentStatusChart paid={adminStats?.paidTenants || 0} unpaid={adminStats?.unpaidTenants || 0} />
+              {/* Monthly Income Table */}
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    {t('total_income')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(monthlyIncomeData || []).map((item, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                        <span className="text-sm font-medium text-muted-foreground">{item.month}</span>
+                        <span className="font-semibold">{formatCurrency(item.income)}</span>
+                      </div>
+                    ))}
+                    {(monthlyIncomeData || []).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Ma'lumot yo'q</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment Status */}
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    {t('payments')} - {t('this_month')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t('expected_amount')}</span>
+                      <span className="font-semibold">{formatCurrency(paymentSummary?.expected || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t('paid_amount')}</span>
+                      <span className="font-semibold text-green-600">{formatCurrency(paymentSummary?.paid || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">{t('unpaid_balance')}</span>
+                      <span className="font-semibold text-destructive">{formatCurrency(paymentSummary?.unpaid || 0)}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden mt-2">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
+                        style={{ width: `${paymentSummary?.percentage || 0}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">{paymentSummary?.percentage || 0}% to'langan</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-border">
+                      <span className="text-muted-foreground">{t('paid_users')}</span>
+                      <span className="font-semibold text-green-600">{isOwner ? ownerStats?.paidTenants || 0 : adminStats?.paidTenants || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{t('unpaid_users')}</span>
+                      <span className="font-semibold text-destructive">{isOwner ? ownerStats?.unpaidTenants || 0 : adminStats?.unpaidTenants || 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Admin Charts - Row 2 */}
+            {/* Row 2: Monthly Trend + Product Types */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TenantsByProductChart data={productTypeData || []} />
-              <MonthlyTrendChart data={monthlyTrendData || []} />
+              {/* Monthly Trend Table */}
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    {t('monthly_stats')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center py-2 border-b border-border font-medium text-sm">
+                      <span className="w-16">Oy</span>
+                      <span className="text-muted-foreground">{t('expected_amount')}</span>
+                      <span className="text-green-600">{t('paid_amount')}</span>
+                    </div>
+                    {(monthlyTrendData || []).map((item, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                        <span className="w-16 text-sm font-medium">{item.month}</span>
+                        <span className="text-sm">{formatCurrency(item.expected)}</span>
+                        <span className="text-sm text-green-600">{formatCurrency(item.paid)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Product Types */}
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    {t('product_type')}
+                  </CardTitle>
+                  <CardDescription>
+                    {isOwner ? 'Barcha omborlardagi mahsulotlar' : 'Sizning ombordagi mahsulotlar'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(productTypeData || []).length > 0 ? (
+                      productTypeData?.map((type, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                          <span className="text-sm font-medium">{type.name}</span>
+                          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-semibold">
+                            {type.value} ta
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">Ma'lumot yo'q</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Admin Performance (Owner only) */}
+            {isOwner && (adminPerformanceData || []).length > 0 && (
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    {t('admin_performance')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center py-2 border-b border-border font-medium text-sm">
+                      <span>Admin</span>
+                      <span className="text-muted-foreground">{t('total_income')}</span>
+                      <span className="text-muted-foreground">{t('total_tenants')}</span>
+                    </div>
+                    {adminPerformanceData?.map((admin, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                        <span className="text-sm font-medium">{admin.name}</span>
+                        <span className="text-sm">{formatCurrency(admin.income)}</span>
+                        <span className="text-sm font-semibold">{admin.tenants}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
-
-        {/* Additional Info Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="card-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                {t('product_type')}
-              </CardTitle>
-              <CardDescription>
-                {isOwner ? 'Barcha omborlardagi mahsulotlar' : 'Sizning ombordagi mahsulotlar'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {(productTypeData || []).length > 0 ? (
-                  productTypeData?.map((type, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium"
-                    >
-                      {type.name}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground text-sm">Ma'lumot yo'q</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="card-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                {t('payments')}
-              </CardTitle>
-              <CardDescription>
-                {t('this_month')} to'lovlar holati
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t('expected_amount')}</span>
-                  <span className="font-semibold">{formatCurrency(paymentSummary?.expected || 0)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t('paid_amount')}</span>
-                  <span className="font-semibold text-green-600">{formatCurrency(paymentSummary?.paid || 0)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t('unpaid_balance')}</span>
-                  <span className="font-semibold text-destructive">{formatCurrency(paymentSummary?.unpaid || 0)}</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden mt-4">
-                  <div 
-                    className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
-                    style={{ width: `${paymentSummary?.percentage || 0}%` }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground text-center">{paymentSummary?.percentage || 0}% to'langan</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </DashboardLayout>
   );
